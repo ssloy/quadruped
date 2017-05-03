@@ -7,4 +7,4 @@ in 2016 it looked something like this one :
 
 The design is heavily inspired by the PhantomX AX Quadruped:
 
-![](http://www.trossenrobotics.com/shared/images/PImages/RK-PhantomX-Quadropod-AX-12-f.jpg)
+![](http://www.trossenrobotics.com/images/PImages/KIT-RK-PXC-QUAD-AX-12-mkII-a.jpg)
