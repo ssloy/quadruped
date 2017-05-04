@@ -12,8 +12,12 @@ public:
     bool get_heading(float &h);
     bool read_magnetometer(float &x, float &y, float &z);   // returns Ga
     bool read_accelerometer(float &x, float &y, float &z);  // returns g
+    void set_magnetometer_offset(float ox, float oy, float oz);
 private:
     int file;
+    float offset_x;
+    float offset_y;
+    float offset_z;
 };
 
 #endif //__GY_85_H__

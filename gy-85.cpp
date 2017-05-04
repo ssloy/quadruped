@@ -63,7 +63,7 @@ static inline __s32 i2c_smbus_read_i2c_block_data(int file, __u8 command, __u8 l
     }
 }
 
-GY85::GY85(const char *i2c_bus) : file(-1) {
+GY85::GY85(const char *i2c_bus) : file(-1), offset_x(0), offset_y(0), offset_z(0) {
     file = open(i2c_bus, O_RDWR);
     if (file<0) {
         std::cerr << "Can not open device " << i2c_bus << std::endl;
@@ -99,6 +99,12 @@ GY85::~GY85() {
     if (file>=0) close(file);
 }
 
+void GY85::set_magnetometer_offset(float ox, float oy, float oz) {
+    offset_x = ox;
+    offset_y = oy;
+    offset_z = oz;
+}
+
 bool GY85::get_heading(float &heading) {
     float x, y, z;
     bool res = read_magnetometer(x, y, z);
@@ -128,9 +134,9 @@ bool GY85::read_magnetometer(float &x, float &y, float &z) {
     short yraw = *(short *)(void *)&uy;
     short zraw = *(short *)(void *)&uz;
 
-    x = float(xraw)/1090.;
-    y = float(yraw)/1090.;
-    z = float(zraw)/1090.;
+    x = float(xraw)/1090. - offset_x;
+    y = float(yraw)/1090. - offset_y;
+    z = float(zraw)/1090. - offset_z;
 
     return true;
 }

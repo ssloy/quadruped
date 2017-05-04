@@ -1,6 +1,8 @@
 #ifndef __DYNAMIXEL_H__
 #define __DYNAMIXEL_H__
 
+#define TRIK_GPIO1_11_DIRz
+
 class Dynamixel {
 public:
     static const unsigned char broadcast_id = 254;
@@ -39,7 +41,6 @@ public:
 
     CommStatus syncwrite_one_word(unsigned char address, const unsigned char *servos, const int *word_array, unsigned char nservos);
 
-    int set_direction(int level);
 private:
 
     CommStatus rx(unsigned char offset, unsigned char toread, int timeout_ms);

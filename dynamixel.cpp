@@ -11,9 +11,8 @@
 
 #include "dynamixel.h"
 
-#define TRIK_GPIO1_11_DIR
 
-#ifdef TRIK_GPIO1_11_DIR
+#if defined(TRIK_GPIO1_11_DIR)
 
 #include <sys/mman.h>
 #define GPIO_BASE_ADDR 0x01E26000
@@ -21,7 +20,6 @@
 volatile unsigned long *gpio_base_address;
 
 int gpio_setup() {
-    return 0;
     int  m_mfd;
     if ((m_mfd = open("/dev/mem", O_RDWR)) < 0) {
         return -1;
@@ -36,6 +34,20 @@ int gpio_setup() {
     return 0;
 }
 
+void set_direction(int level) {
+/*    if (level) {
+        *(((unsigned char *)(void *)gpio_base_address) + 0x18 + 3) |= 8;
+    } else {
+        *(((unsigned char *)(void *)gpio_base_address) + 0x1C + 3) |= 8;
+    }
+*/
+    if (level) {
+        *(((unsigned char *)(void *)gpio_base_address) + 0x14 + 3) |= 0x08;
+    } else {
+        *(((unsigned char *)(void *)gpio_base_address) + 0x14 + 3) &= 0xF7;
+    }
+}
+
 #endif
 
 
@@ -45,9 +57,6 @@ inline unsigned char  low_byte(int v) { return  v & 0xFF; }
 Dynamixel::Dynamixel(int baud_number) : serial_fd_(-1), baud_number_(baud_number), baud_rate_(), byte_transfer_time_ms_(), rx_error_flag_(true) {
     baud_rate_ = 2000000.0f/(float)(baud_number_+1);
     byte_transfer_time_ms_ = (float)((1000.0f / baud_rate_) * 10.0f);
-#ifdef TRIK_GPIO1_11_DIR
-    gpio_setup();
-#endif
 }
 
 bool Dynamixel::open_serial(const char *serial_device) {
@@ -57,8 +66,8 @@ bool Dynamixel::open_serial(const char *serial_device) {
     }
     tcflag_t c_cflag = B1000000;
     switch (baud_number_) {
-        case 1:   c_cflag = B921600; /*B1000000;*/ break;
-//        case 1:   c_cflag = B1000000; break;
+//        case 1:   c_cflag = B921600; break;
+        case 1:   c_cflag = B1000000; break;
         case 3:   c_cflag = B500000;  break;
 //        case 4:   c_cflag = B400000;  break;
 //        case 7:   c_cflag = B250000;  break;
@@ -85,7 +94,10 @@ bool Dynamixel::open_serial(const char *serial_device) {
     tcflush(serial_fd_, TCIFLUSH);
     tcsetattr(serial_fd_, TCSANOW, &tty_opt);
 
-    set_direction(0);
+#if defined(TRIK_GPIO1_11_DIR)
+    gpio_setup();
+    set_direction(1);
+#endif
 
 #else
     // TODO put baud rate accordingly
@@ -145,13 +157,12 @@ Dynamixel::CommStatus Dynamixel::set_goal_position(unsigned char id, int value) 
 }
 
 Dynamixel::CommStatus Dynamixel::set_moving_speed(unsigned char id, int value) {
-	return write_word(id, 0x20, value);
+    return write_word(id, 0x20, value);
 }
 
 Dynamixel::CommStatus Dynamixel::set_max_torque(unsigned char id, int value) {
-	return write_word(id, 0x22, value);
+    return write_word(id, 0x22, value);
 }
-
 
 Dynamixel::CommStatus Dynamixel::change_id(unsigned char old_id, unsigned char new_id) {
     return write_byte(old_id, 0x03, new_id);
@@ -170,9 +181,9 @@ Dynamixel::CommStatus Dynamixel::get_present_position(unsigned char id, int &pos
 }
 
 Dynamixel::CommStatus Dynamixel::get_present_load(unsigned char id, int &load) {
-	Dynamixel::CommStatus res = read_word(id, 0x28, load);
-	if (load > 1023) load = 1024 - load;
-	return res;
+    Dynamixel::CommStatus res = read_word(id, 0x28, load);
+    if (load > 1023) load = 1024 - load;
+    return res;
 }
 
 Dynamixel::CommStatus Dynamixel::is_moving(unsigned char id, unsigned char &moving) {
@@ -186,13 +197,13 @@ bool Dynamixel::ping(unsigned char id) {
     return ret==COMM_RXSUCCESS && id == status_packet_[2];
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////w//  private functions, normally no need to look below  //////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  private functions, normally no need to look below  //////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // serial read() wrapper, handles given timeout + custom error messages
 Dynamixel::CommStatus Dynamixel::rx(unsigned char offset, unsigned char toread, int timeout_ms) {
-    long   start_ms, cur_ms;
+    long   start_ms, cur_ms; // TODO ms -> ns
     time_t start_s,  cur_s;
     struct timespec spec;
     clock_gettime(CLOCK_REALTIME, &spec);
@@ -320,8 +331,12 @@ Dynamixel::CommStatus Dynamixel::send_instruction_packet(unsigned char id, unsig
 
     int packet_length = nparams + 6;
 
-//  set_direction(1); // halfdupex TX ON
-//  usleep(50);
+#if defined(TRIK_GPIO1_11_DIR)
+    set_direction(1); // halfdupex TX ON
+    usleep(50);
+#endif
+
+
 #if defined(__unix__)
     int nbytes_sent = write(serial_fd_, instruction_packet_, packet_length);   
 #else
@@ -329,28 +344,25 @@ Dynamixel::CommStatus Dynamixel::send_instruction_packet(unsigned char id, unsig
      WriteFile(serial_fd_, instruction_packet_, packet_length, (LPDWORD)((void *)&nbytes_sent), NULL);
 #endif
 
-//   usleep(80);
 
+#if defined(TRIK_GPIO1_11_DIR)
+//   usleep(80);
 /*
-#ifdef TRIK_GPIO1_11_DIR
     volatile unsigned int uiBusyWait=0;
     do {
         uiBusyWait++;
     } while (uiBusyWait<80000);
-#else
-//    tcdrain(serial_fd_); // TODO actually, tcdrain takes up to 10 times it really should, thus failing reception of status packet, check how it behaves on your platform
-#endif
 */
 //    tcdrain(serial_fd_); // TODO actually, tcdrain takes up to 10 times it really should, thus failing reception of status packet, check how it behaves on your platform
 
-//  set_direction(0); // halfdupex TX OFF
+     set_direction(0); // halfdupex TX OFF
+#endif
 
     return packet_length == nbytes_sent ? COMM_TXSUCCESS : COMM_TXFAIL;
 }
 
 Dynamixel::CommStatus Dynamixel::send_instruction_read_status(unsigned char id, unsigned char instruction, const unsigned char *parameters, unsigned char nparams) {
     Dynamixel::CommStatus ret = send_instruction_packet(id, instruction, parameters, nparams);
-    /*
     if (COMM_TXSUCCESS != ret) return ret;
     ret = read_status_packet();
     if (COMM_TXSUCCESS != ret) return ret;
@@ -358,7 +370,6 @@ Dynamixel::CommStatus Dynamixel::send_instruction_read_status(unsigned char id, 
         rx_error_flag_ = true;
         return COMM_RXCORRUPT;
     }
-    */
     return ret;
 }
 
@@ -401,36 +412,4 @@ Dynamixel::CommStatus Dynamixel::write_word(unsigned char id, unsigned char addr
 }
 
 
-int Dynamixel::set_direction(int level) {
-return 1;
-#ifdef TRIK_GPIO1_11_DIR
-/*    if (level) {
-        *(((unsigned char *)(void *)gpio_base_address) + 0x18 + 3) |= 8;
-    } else {
-        *(((unsigned char *)(void *)gpio_base_address) + 0x1C + 3) |= 8;
-    }
-*/
-    if (level) {
-        *(((unsigned char *)(void *)gpio_base_address) + 0x14 + 3) |= 0x08;
-    } else {
-        *(((unsigned char *)(void *)gpio_base_address) + 0x14 + 3) &= 0xF7;
-    }
-#else
-    int status;
-    if (ioctl(serial_fd_, TIOCMGET, &status) == -1) {
-        std::cerr << "set_rts() error" << std::endl;
-        return 0;
-    }
-    if (level) { // TODO probably inverted on your platform, check this one
-        status &= ~TIOCM_RTS;
-    } else {
-        status |= TIOCM_RTS;
-    }
-    if (ioctl(serial_fd_, TIOCMSET, &status) == -1) {
-        std::cerr << "set_rts() error" << std::endl;
-        return 0;
-    }
-#endif
-    return 1;
-}
 

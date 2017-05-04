@@ -4,25 +4,39 @@
 #include "dynamixel.h"
 #include "gy-85.h"
 
+void set_direction(int level);
+
 int main(int argc, char** argv) {
-    /*
     const char device_name[] = "/dev/i2c-1";
     GY85 gy85(device_name);
+    gy85.set_magnetometer_offset(.16, -.03, -.37);
+#if 1
     while (1) {
-        float heading = -3600, gx=40., gy=40., gz=40.;
+        float heading, mx, my, mz;
+        gy85.read_magnetometer(mx, my, mz);
         gy85.get_heading(heading);
+        std::cerr << mx << " " << my << " " << mz << "\t\t" << heading << std::endl;
+        /*
+        float heading = -3600, gx=40., gy=40., gz=40.;
         gy85.read_accelerometer(gx, gy, gz);
         std::cerr << "heading (deg): " << heading << "\t acceleration (g) " << gx << " " << gy << " " << gz  << std::endl;
+        */
         usleep(100000);
     }
     return 0;
-    */
+#endif
 
     Dynamixel dxl(16);
     if (!dxl.open_serial("/dev/ttyS0")) {
         std::cerr << "Can not open serial device" << std::endl;
         return -1;
     }
+
+#if 0
+    while (1) {
+        std::cerr << dxl.ping(1) << std::endl;
+    }
+#endif
 
 
     int positions[12][30] = {{511, 514, 518, 522, 526, 531,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1, 531, 530, 529, 527, 524, 522, 519, 516, 514, 512, 511, 511},
@@ -55,6 +69,9 @@ int main(int argc, char** argv) {
         }
         dxl.syncwrite_one_word(0x1E, buf1, buf2, size);
         usleep(30000);
+        float heading;
+        gy85.get_heading(heading);
+        std::cerr <<  heading << std::endl;
     }
 
     std::cerr << "done" << std::endl;
