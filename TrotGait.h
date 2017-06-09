@@ -14,10 +14,10 @@
 class TrotGait {
 public:
 
-    bool trotUpDownCourseCorrection(int step_length, int step_high, int step_amount, char u_or_d, int turn_shift,
+    bool trotUpDownCourseCorrection(int step_length, int step_high, int step_amount, char u_or_d, int turn_shift_percent,
                                     bool need_correction);
 
-    bool trotJumpingUpDown(int step_length, int step_high, int step_amount, char u_or_d);
+    bool trotJumpingUpDown(int step_length, int step_high, int step_amount, char u_or_d, int go_down_percent);
 
     bool trotInitialPosition();
 
@@ -25,7 +25,11 @@ public:
 
     bool self_calibrate(int amount_calls);
 
+    bool self_balance(int each_step);
+
     bool bodyMove(int x_shift, int y_shift, int z_shift, int speed);
+
+    bool bodyMoveFromInitial(int x_shift, int y_shift, int z_shift, int speed);
 
 
 };

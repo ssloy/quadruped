@@ -656,3 +656,118 @@ Coordinates::ellipse_down_points_leg(int x1, int y1, int z1, int x2, int y2, int
         return result;
     }
 }
+
+bool Coordinates::followPoints_sync(LegPoint *legPts, int numb_of_legs) {
+
+    int max_length = (int) legPts[0].x_dots.size();
+
+    for (int i = 0; i < numb_of_legs; ++i) {
+        if (legPts[i].x_dots.size() > max_length) max_length = (int) legPts[i].x_dots.size();
+    }
+
+//    std::cerr << "Max Length:" << max_length << std::endl;
+
+    for (int j = 0; j < numb_of_legs; ++j) {
+        if (legPts[j].x_dots.size() < max_length) {
+            int cur_length = int(legPts[j].x_dots.size());
+
+            int each = max_length / cur_length;
+            int difference = max_length - cur_length * each;
+
+            int lucky_guy = (int) round(cur_length / 2.0);
+//            std::cerr << "FIRST***********************:" << lucky_guy << std::endl;
+//
+//            for (int m = 0; m < cur_length; ++m) {
+//                std::cerr << "x [" << m << "]:  " << legPts[j].x_dots[m] << std::endl;
+//
+//            }
+//
+//            std::cerr << "Current Length:" << cur_length << std::endl;
+//            std::cerr << "Each:" << each << std::endl;
+//            std::cerr << "Difference:" << difference << std::endl;
+//            std::cerr << "Luck guy:" << lucky_guy << std::endl;
+
+            std::vector<int> tmp_x_arr((unsigned long) max_length);
+            std::vector<int> tmp_y_arr((unsigned long) max_length);
+            std::vector<int> tmp_z_arr((unsigned long) max_length);
+            int tmp_leg_n = legPts[j].legNumber;
+
+            int k = 0;
+            for (int i = 0; i < cur_length; ++i) {
+                if (i == lucky_guy) {
+                    for (int l = 0; l < each + difference; ++l) {
+                        tmp_x_arr[k + l] = legPts[j].x_dots[i];
+                        tmp_y_arr[k + l] = legPts[j].y_dots[i];
+                        tmp_z_arr[k + l] = legPts[j].z_dots[i];
+
+                    }
+                    k += each + difference;
+
+                } else {
+                    for (int l = 0; l < each; ++l) {
+                        tmp_x_arr[k + l] = legPts[j].x_dots[i];
+                        tmp_y_arr[k + l] = legPts[j].y_dots[i];
+                        tmp_z_arr[k + l] = legPts[j].z_dots[i];
+
+                    }
+                    k += each;
+                }
+            }
+
+            LegPoint tmpLegPoint (tmp_x_arr, tmp_y_arr, tmp_z_arr, tmp_leg_n);
+            legPts[j] = tmpLegPoint;
+
+
+
+        }
+    }
+    followPoints(legPts, numb_of_legs);
+    return true;
+}
+
+LegPoint Coordinates::make_start_delay(LegPoint legPts, int percent_delay) {
+
+    int length = (int) legPts.x_dots.size();
+    int new_length = int((length * percent_delay / 100.0)) + length;
+    int diff = new_length - length;
+
+    std::vector<int> tmp_x_arr((unsigned long) new_length);
+    std::vector<int> tmp_y_arr((unsigned long) new_length);
+    std::vector<int> tmp_z_arr((unsigned long) new_length);
+    int tmp_leg_n = legPts.legNumber;
+
+
+//    std::cerr << "FIRST***********************:" <<  std::endl;
+//
+//    for (int m = 0; m < length; ++m) {
+//        std::cerr << "x [" << m << "]:  " << legPts.x_dots[m] << std::endl;
+//
+//    }
+
+
+    for (int i = 0; i < diff; ++i) {
+        tmp_x_arr[i] = legPts.x_dots[0];
+        tmp_y_arr[i] = legPts.y_dots[0];
+        tmp_z_arr[i] = legPts.z_dots[0];
+    }
+
+    for (int j = 0; j < length; ++j) {
+
+        tmp_x_arr[j + diff] = legPts.x_dots[j];
+        tmp_y_arr[j + diff] = legPts.y_dots[j];
+        tmp_z_arr[j + diff] = legPts.z_dots[j];
+    }
+
+//
+//    std::cerr << "LAST***********************:" <<  std::endl;
+//
+//    for (int m = 0; m < new_length; ++m) {
+//        std::cerr << "x [" << m << "]:  " << tmp_x_arr[m] << std::endl;
+//
+//    }
+
+    LegPoint result(tmp_x_arr, tmp_y_arr, tmp_z_arr, tmp_leg_n);
+
+    return result;
+}
+

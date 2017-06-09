@@ -12,8 +12,8 @@
 
 class Measurements {
 public:
-    int speed = 400;
-    int split = 3;
+    int speed = 225;
+    int split = 4;
     int length_centr_to_x0 = 90;
     int gipLength_0 = 50;
     int up_limit_pos_0 = 785;
@@ -35,8 +35,8 @@ public:
     double bigLegLength = length_centr_to_x0 + gipLength_0 + gipLength_1 + gipLength_2;
 
 //  For magnetometer (info from calibrating)
-    float off_x = 0.33;
-    float off_y = -0.42;
+    float off_x = 0.40;
+    float off_y = (float) -0.47;
 };
 
 

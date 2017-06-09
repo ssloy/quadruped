@@ -64,16 +64,19 @@ void Positions::closePort() {
 }
 
 // hardcoded initialPosition(low) NO USAGE
-void Positions::initialPosition() {
 
-    int speeds[12] = {mes->speed, mes->speed, mes->speed, mes->speed, mes->speed, mes->speed, mes->speed, mes->speed,
-                      mes->speed, mes->speed, mes->speed, mes->speed};
-    unsigned char servos[] = {0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 31, 32};
-    int myPos[12] = {511, 674, 260, 511, 674, 260, 511, 674, 260, 511, 674, 260};
-    dxl->syncwrite_one_word(0x20, servos, speeds, 12);
-    dxl->syncwrite_one_word(0x1E, servos, myPos, 12);
+void Positions::upLegs(int *legs, int amount) {
+    unsigned char servos[amount];
+    int angles[amount];
+    for (int i = 0; i < amount; ++i) {
+        if (legs[i] == 0) servos[i] = 1; else
+        if (legs[i] == 1) servos[i] = 11; else
+        if (legs[i] == 2) servos[i] = 21; else
+        if (legs[i] == 3) servos[i] = 31;
+        angles[i] = 70;
+    }
 
-    std::cerr << "INITIAL POSITION METHOD!!!" << std::endl;
+    set_angles_syncArray(servos, angles, amount);
 }
 
 // Default is the speed, saved in measurements file.
@@ -82,17 +85,23 @@ void Positions::setDefaultSpeeds() {
                       mes->speed, mes->speed, mes->speed, mes->speed};
     unsigned char servos[] = {0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 31, 32};
     dxl->syncwrite_one_word(0x20, servos, speeds, 12);
+    std::cerr << "ALARM! DEFAULT SPEED TO ALL: " << speeds[0] << std::endl;
+
 }
 
 // Set given speed to ALL actuators
-void Positions::setSpeed(int speed) {
+void Positions::setSpeedToAll(int speed) {
 
     int speeds[12] = {speed, speed, speed, speed, speed, speed, speed, speed, speed, speed, speed, speed};
     unsigned char servos[] = {0, 1, 2, 10, 11, 12, 20, 21, 22, 30, 31, 32};
     dxl->syncwrite_one_word(0x20, servos, speeds, 12);
-    std::cerr << "SPEED SET (NOT DEFAULT)!!" << std::endl;
+    mes->speed = speed;
+
+    std::cerr << "SPEED SET (NOT DEFAULT): " << speeds[0] << std::endl;
 
 }
+
+
 
 // This method takes an angle and a leg and checks the possibility to set up this angle. The constraints are taken f
 // rom the file Measurements. It returns -1 if it is impossible to set or the position (>0) which should be sent
@@ -238,6 +247,8 @@ std::vector<int> Positions::returnCurrentLegCoor(int leg) {
     std::vector<int> result = body->computeCurrentPoint(leg);
     return result;
 }
+
+
 
 
 

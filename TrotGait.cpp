@@ -42,7 +42,7 @@ bool TrotGait::trotInitialPosition() {
 // need_correction defines the necessity of course stability
 
 bool TrotGait::trotUpDownCourseCorrection(int step_length, int step_high, int step_amount, char u_or_d,
-                                          int turn_shift, bool need_correction) {
+                                          int turn_shift_percent, bool need_correction) {
 
     std::vector<int> current_leg0 = posObjT->returnCurrentLegCoor(0);
     std::vector<int> current_leg1 = posObjT->returnCurrentLegCoor(1);
@@ -72,14 +72,14 @@ bool TrotGait::trotUpDownCourseCorrection(int step_length, int step_high, int st
         std::cerr << "Wrong direction!" << std::endl;
         return false;
     }
-    magnetometer.set_magnetometer_offset(mesObjT->off_x, mesObjT->off_y, -.37);
+    magnetometer.set_magnetometer_offset(mesObjT->off_x, mesObjT->off_y, (float)-.37);
     float start_heading;
     magnetometer.get_heading(start_heading);
     //     Change this! argument split is useless now
     int split = mesObjT->split;
     std::cerr << "Trot Walk Up Inside" << std::endl;
     int shift = int(float(step_length) / std::sqrt(2));
-    int shift_correction = int(float(turn_shift * shift) / 100.0);
+    int shift_correction = int(float(turn_shift_percent * shift) / 100.0);
     int shift_right = shift + shift_correction;
     int shift_left = shift - shift_correction;
     std::cerr << "Start Head: " << start_heading << std::endl;
@@ -110,7 +110,7 @@ bool TrotGait::trotUpDownCourseCorrection(int step_length, int step_high, int st
 
 //    Making one or several steps, depending on given parameter.
     for (int i = 0; i < step_amount; ++i) {
-        if (turn_shift == 0 and need_correction) {
+        if (turn_shift_percent == 0 and need_correction) {
             float current_head;
             magnetometer.set_magnetometer_offset(mesObjT->off_x, mesObjT->off_y, -.37);
             magnetometer.get_heading(current_head);
@@ -279,8 +279,18 @@ bool TrotGait::trotUpDownCourseCorrection(int step_length, int step_high, int st
 }
 
 // Experiment, walking with moving COG up and down
-bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount, char u_or_d) {
-    int step_down = int(0.5 * step_high);
+bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount, char u_or_d, int go_down_percent) {
+    std::vector<int> current_leg0 = posObjT->returnCurrentLegCoor(0);
+    std::vector<int> current_leg1 = posObjT->returnCurrentLegCoor(1);
+    std::vector<int> current_leg2 = posObjT->returnCurrentLegCoor(2);
+    std::vector<int> current_leg3 = posObjT->returnCurrentLegCoor(3);
+
+    int start_pos0[3] = {current_leg0[0], current_leg0[1], current_leg0[2]};
+    int start_pos1[3] = {current_leg1[0], current_leg1[1], current_leg1[2]};
+    int start_pos2[3] = {current_leg2[0], current_leg2[1], current_leg2[2]};
+    int start_pos3[3] = {current_leg3[0], current_leg3[1], current_leg3[2]};
+
+    int step_down = int((go_down_percent / 100.0) * step_high);
     int direct_k;
 //    Walking UP
     if (u_or_d == 'u') {
@@ -324,7 +334,7 @@ bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount
                                                  start_pos3[2], step_high, split, 3);
 
     LegPoint pts_iteration_1[] = {line_pts0, pts1, pts3, line_pts2};
-    coorObjT->followPoints(pts_iteration_1, 4);
+    coorObjT->followPoints_sync(pts_iteration_1, 4);
 
 
 //    Making one or several steps, depending on given parameter.
@@ -362,7 +372,7 @@ bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount
                                                                start_pos3[2], step_down, split, 3);
 
         LegPoint pts_iteration_2[] = {pts0, line_pts1, pts2, line_pts3};
-        coorObjT->followPoints(pts_iteration_2, 4);
+        coorObjT->followPoints_sync(pts_iteration_2, 4);
 
         //   1 and 3 leg moving forward
 
@@ -397,7 +407,7 @@ bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount
                                             step_high, split, 3);
 
         LegPoint pts_iteration_3[] = {pts1, line_pts0, pts3, line_pts2};
-        coorObjT->followPoints(pts_iteration_3, 4);
+        coorObjT->followPoints_sync(pts_iteration_3, 4);
     }
 
 
@@ -434,7 +444,7 @@ bool TrotGait::trotJumpingUpDown(int step_length, int step_high, int step_amount
                                                            start_pos3[2], step_down, split, 3);
 
     LegPoint pts_iteration_4[] = {pts0, line_pts1, pts2, line_pts3};
-    coorObjT->followPoints(pts_iteration_4, 4);
+    coorObjT->followPoints_sync(pts_iteration_4, 4);
 
 
     return true;
@@ -535,9 +545,10 @@ bool TrotGait::self_calibrate(int amount_calls) {
 
 // To move COG (body). Actually it means moving of all legs in the same direction within the same length, using line trajectory
 bool TrotGait::bodyMove(int x_shift, int y_shift, int z_shift, int speed) {
-    if (speed != 0) {
-        posObjT->setSpeed(speed);
-    }
+//    int default_speed = mesObjT->speed;
+//    if (speed != 0) {
+//        posObjT->setSpeedToAll(speed);
+//    }
 
     std::vector<int> current_leg0 = posObjT->returnCurrentLegCoor(0);
     std::vector<int> current_leg1 = posObjT->returnCurrentLegCoor(1);
@@ -568,6 +579,59 @@ bool TrotGait::bodyMove(int x_shift, int y_shift, int z_shift, int speed) {
 
     LegPoint pts_iteration_1[] = {line_pts0, line_pts1, line_pts2, line_pts3};
     coorObjT->followPoints(pts_iteration_1, 4);
-    posObjT->setDefaultSpeeds();
+//    posObjT->setSpeedToAll(default_speed);
+
     return true;
+}
+
+// To move COG (body). Actually it means moving of all legs in the same direction within the same length, using line trajectory
+bool TrotGait::bodyMoveFromInitial(int x_shift, int y_shift, int z_shift, int speed) {
+//    int default_speed = mesObjT->speed;
+//    if (speed != 0) {
+//        posObjT->setSpeedToAll(speed);
+//    }
+
+    std::vector<int> current_leg0 = posObjT->returnCurrentLegCoor(0);
+    std::vector<int> current_leg1 = posObjT->returnCurrentLegCoor(1);
+    std::vector<int> current_leg2 = posObjT->returnCurrentLegCoor(2);
+    std::vector<int> current_leg3 = posObjT->returnCurrentLegCoor(3);
+
+
+    LegPoint line_pts0 = coorObjT->line_points_leg(current_leg0[0], current_leg0[1], current_leg0[2],
+                                                   start_pos0[0] + x_shift,
+                                                   start_pos0[1] + y_shift,
+                                                   start_pos0[2] + z_shift, split, 0);
+
+    LegPoint line_pts1 = coorObjT->line_points_leg(current_leg1[0], current_leg1[1], current_leg1[2],
+                                                   start_pos1[0] + x_shift,
+                                                   start_pos1[1] + y_shift,
+                                                   start_pos1[2] + z_shift, split, 1);
+
+    LegPoint line_pts2 = coorObjT->line_points_leg(current_leg2[0], current_leg2[1], current_leg2[2],
+                                                   start_pos2[0] + x_shift,
+                                                   start_pos2[1] + y_shift,
+                                                   start_pos2[2] + z_shift, split, 2);
+
+    LegPoint line_pts3 = coorObjT->line_points_leg(current_leg3[0], current_leg3[1], current_leg3[2],
+                                                   start_pos3[0] + x_shift,
+                                                   start_pos3[1] + y_shift,
+                                                   start_pos3[2] + z_shift, split, 3);
+
+
+    LegPoint pts_iteration_1[] = {line_pts0, line_pts1, line_pts2, line_pts3};
+    coorObjT->followPoints(pts_iteration_1, 4);
+//    posObjT->setSpeedToAll(default_speed);
+
+    return true;
+}
+bool TrotGait::self_balance(int each_step) {
+    int up_degree = 70;
+    bool balance_OK = false;
+
+    while (!balance_OK) {
+
+        balance_OK=true;
+    }
+
+    return false;
 }

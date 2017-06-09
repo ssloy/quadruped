@@ -28,6 +28,10 @@ public:
                       << z_dots[i] << std::endl;
         }
     }
+
+
+
+
 };
 
 

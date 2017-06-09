@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 
     posObj->openPort();
     int legTest[] = {0, 2};
+    int legTest1_3[] = {1, 3};
 
     int x_test[] = {260};
     int y_test[] = {0};
@@ -48,8 +49,11 @@ int main(int argc, char **argv) {
     GY85 gy85(device_name);
     gy85.set_magnetometer_offset(mesObj->off_x, mesObj->off_y, -.37);
     int steps;
+    int koef;
     int cur_leg, x_shift, y_shift, z_shift;
-
+    double pitch;
+    int auto_move;
+    int start_speed = mesObj->speed;
     std::cerr << "Please choose an option\n" << std::endl;
     std::cerr << "i - set to initial position\n"
               << "t - make a trot step\n"
@@ -71,12 +75,29 @@ int main(int argc, char **argv) {
                 break;
 
             case 'j':
-//                testEllipse.printLegPoint();
-                trotObj->trotJumpingUpDown(20, 30, 1, 'u');
+                std::cerr << "Go down percent? >>> ";
+                std::cin >> koef;
+                std::cerr << "steps >>> ";
+                std::cin >> steps;
+                trotObj->trotJumpingUpDown(20, 30, steps, 'u', koef);
+                break;
+
+            case '8':
+                std::cerr << "steps >>> ";
+                std::cin >> steps;
+                creepObj->creepWalkUp(120, 30, 0, steps);
+                break;
+
+
+            case '7':
+                std::cerr << "steps >>> ";
+                std::cin >> steps;
+                creepObj->deerWalkUp(100, 30, 0, steps);
                 break;
 
             case 'i':
-                std::cerr << "Setting to initial position..." << std::endl;
+                posObj->setDefaultSpeeds();
+                std::cerr << "Main: Setting to initial position..." << std::endl;
                 trotObj->trotInitialPosition();
                 break;
 
@@ -115,6 +136,41 @@ int main(int argc, char **argv) {
                 trotObj->trotUpDownCourseCorrection(20, 30, steps, 'u', 0, false);
                 break;
 
+            case '1':
+                for (int k = 0; k < 100; ++k) {
+                    float mx, my, mz;
+                    gy85.read_accelerometer(mx, my, mz);
+                    pitch = std::atan(std::sqrt(mx * mx + my * my) / mz) * 180.0 / 3.14;
+                    pitch = round(pitch);
+                    if (pitch > 15) pitch = 15;
+                    auto_move = 6 + int(pitch * 2);
+                    std::cerr << "Pitch angle is (or more): " << pitch << ", Auto move on: " << auto_move << std::endl;
+                    if (pitch >= 15) {
+                        trotObj->bodyMoveFromInitial(int(auto_move * 0.5), int(auto_move * 0.7 * 0.5 * (-1)), 0, 225);
+                        usleep(500000);
+
+                        posObj->setSpeedToAll(400);
+                        creepObj->creepWalkUp(120, 30, 0, 1);
+                        posObj->setSpeedToAll(start_speed);
+
+                    } else {
+                        trotObj->bodyMoveFromInitial(auto_move, int(auto_move * 0.7 * (-1)), 0, 225);
+                        usleep(500000);
+
+                        trotObj->trotUpDownCourseCorrection(20, 30, 2, 'u', 0, false);
+                    }
+                    usleep(1000000);
+                }
+                break;
+
+
+            case 'x':
+                std::cerr << "UP Trot Step" << std::endl;
+                std::cerr << "steps >>> ";
+                std::cin >> steps;
+                trotObj->trotUpDownCourseCorrection(20, 30, steps, 'd', 0, false);
+                break;
+
             case 'e':
                 std::cerr << "UP Trot Step" << std::endl;
                 std::cerr << "steps >>> ";
@@ -123,10 +179,10 @@ int main(int argc, char **argv) {
                 break;
 
             case 'q':
-                std::cerr << "UP Trot Step" << std::endl;
+                std::cerr << "LEFT ON 35" << std::endl;
                 std::cerr << "steps >>> ";
                 std::cin >> steps;
-                trotObj->trotUpDownCourseCorrection(20, 30, steps, 'u', 50, false);
+                trotObj->trotUpDownCourseCorrection(20, 30, steps, 'u', 35, false);
                 break;
 
             case 's':
@@ -134,6 +190,12 @@ int main(int argc, char **argv) {
                 std::cerr << "steps >>> ";
                 std::cin >> steps;
                 trotObj->trotUpDownCourseCorrection(20, 30, steps, 'd', 0, true);
+                break;
+
+            case '9':
+                std::cerr << "Set speed to >>> ";
+                std::cin >> steps;
+                posObj->setSpeedToAll(steps);
                 break;
 
             case 't':
@@ -175,14 +237,50 @@ int main(int argc, char **argv) {
                 trotObj->selfTurning(1, -15);
                 break;
 
+            case 'u':
+                std::cerr << "UP legs" << std::endl;
+                posObj->upLegs(legTest, 2);
+                break;
+
+            case 'y':
+                std::cerr << "UP legs 1 3 " << std::endl;
+                posObj->upLegs(legTest1_3, 2);
+                break;
+
             case '?':
-                for (int i = 0; i < 60; ++i) {
+                for (int i = 0; i < 100; ++i) {
                     float heading, mx, my, mz;
                     gy85.read_accelerometer(mx, my, mz);
                     gy85.get_heading(heading);
                     std::cerr << mx << " " << my << " " << mz << "\t\t" << heading << std::endl;
-                    usleep(1000000);
+                    usleep(100000);
                 }
+                break;
+
+            case ']':
+                float mx, my, mz;
+                gy85.read_accelerometer(mx, my, mz);
+                pitch = std::atan(std::sqrt(mx * mx + my * my) / mz) * 180.0 / 3.14;
+                pitch = round(pitch);
+                if (pitch > 15) pitch = 15;
+                auto_move = 6 + int(pitch * 2);
+                std::cerr << "Pitch angle is (or more): " << pitch << ", Auto move on: " << auto_move << std::endl;
+                trotObj->bodyMoveFromInitial(auto_move, int(auto_move * 0.7 * (-1)), 0, 225);
+                break;
+
+            case '[':
+                for (int j = 0; j < 1000; ++j) {
+                    float mx, my, mz;
+                    gy85.read_accelerometer(mx, my, mz);
+                    pitch = std::atan(std::sqrt(mx * mx + my * my) / mz) * 180.0 / 3.14;
+                    pitch = round(pitch);
+                    if (pitch > 20) pitch = 20;
+                    auto_move = 6 + int(pitch * 2);
+                    std::cerr << "Pitch angle is (or more): " << pitch << ", Auto move on: " << auto_move << std::endl;
+                    trotObj->bodyMoveFromInitial(auto_move, int(auto_move * 0.7 * (-1)), 0, 225);
+                    usleep(100000);
+                }
+
                 break;
 
             case '0':

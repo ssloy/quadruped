@@ -11,9 +11,9 @@ class CreepGait {
 
 public:
 
-    bool creepInitialPosition(int step_length);
+    bool creepWalkUp (int step_length, int step_high, int turn_r_l, int step_amount);
 
-    bool creepWalkUp (int step_length, int step_high);
+    bool deerWalkUp (int step_length, int step_high, int turn_r_l, int step_amount);
 
 };
 

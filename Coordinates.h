@@ -40,6 +40,12 @@ public:
 
     bool followPoints(LegPoint *legPts, int numb_of_legs);
 
+    bool followPoints_sync(LegPoint *legPts, int numb_of_legs);
+
+
+    LegPoint make_start_delay(LegPoint legPts, int percent_delay);
+
+
     Coordinates();
 };
 

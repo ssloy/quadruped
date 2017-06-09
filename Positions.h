@@ -15,11 +15,13 @@ class Positions {
 public:
     void setPosition(unsigned char leg, int pos);
 
-    void initialPosition();
+    void upLegs(int *legs, int amount);
 
     void setDefaultSpeeds();
 
-    void setSpeed(int speed);
+    void setSpeedToAll(int speed);
+
+    void set_speed_to(int *legs, int speed, int numb_of_legs);
 
     int checkAngle(unsigned char leg, int deg);
 
