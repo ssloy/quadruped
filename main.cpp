@@ -278,7 +278,7 @@ int main(int argc, char **argv) {
                     auto_move = 6 + int(pitch * 2);
                     std::cerr << "Pitch angle is (or more): " << pitch << ", Auto move on: " << auto_move << std::endl;
                     trotObj->bodyMoveFromInitial(auto_move, int(auto_move * 0.7 * (-1)), 0, 225);
-                    usleep(100000);
+                    usleep(500000);
                 }
 
                 break;

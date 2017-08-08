@@ -35,8 +35,8 @@ public:
     double bigLegLength = length_centr_to_x0 + gipLength_0 + gipLength_1 + gipLength_2;
 
 //  For magnetometer (info from calibrating)
-    float off_x = 0.40;
-    float off_y = (float) -0.47;
+    float off_x = 0.3;
+    float off_y = (float) -0.5;
 };
 
 
